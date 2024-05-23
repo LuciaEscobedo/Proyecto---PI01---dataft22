@@ -3,11 +3,12 @@ import pandas as pd
 # def developer( desarrollador : str ): 
 # Cantidad de items y porcentaje de contenido Free por año según empresa desarrolladora.
 
-# Cargar el Dataset
-df_desarrolladores = pd.read_parquet('./Datasets/def_developer.parquet')
-
 # Funcion Developer
 def developer(desarrollador: str):
+    # Cargar el Dataset
+    df_desarrolladores = pd.read_parquet('./Datasets/def_developer.parquet')
+
+
     # Filtrar los datos para el desarrollador dado
     desarrollador_data = df_desarrolladores[df_desarrolladores['publisher'] == desarrollador]
 
@@ -51,11 +52,13 @@ def developer(desarrollador: str):
 #def UserForGenre( genero : str ): Debe devolver el usuario que acumula más horas jugadas 
 # para el género dado y una lista de la acumulación de horas jugadas por año de lanzamiento.
 
-# Cargar el Dataset
-df_combined = pd.read_parquet('./Datasets/def_userdata.parquet')
 
 # Función Userdata
 def userdata(User_id: str):
+
+    # Cargar el Dataset
+    df_combined = pd.read_parquet('./Datasets/def_userdata.parquet')
+
     # Filtrar el DataFrame combinado por el User_id dado
     user_data = df_combined[df_combined['user_id'] == User_id].copy()  # Copiamos el DataFrame para evitar SettingWithCopyWarning
     
@@ -85,3 +88,37 @@ def userdata(User_id: str):
         "% de recomendación positiva": f"{recommend_percentage:.2f}%",
         "Cantidad de items": total_items
     }
+
+import pandas as pd
+
+# def UserForGenre( genero : str ): Debe devolver el usuario que acumula más horas jugadas 
+# para el género dado y una lista de la acumulación de horas jugadas por año de lanzamiento.
+
+#Funcion UserForGenre
+def UserForGenre(genero: str):
+    # Cargar el Dataset
+    df_combined = pd.read_parquet('./Datasets/def_userforgenre.parquet')
+
+    # Filtrar las filas que contienen el género especificado en alguna parte del texto
+    filtered_df = df_combined[df_combined['genres'].str.contains(genero, case=False, na=False)]
+    
+    if filtered_df.empty:
+        return {"error": "No se encontraron registros para el género especificado"}
+    
+    # Calcular la suma de horas jugadas por usuario para el género dado
+    user_hours_sum = filtered_df.groupby('user_id')['playtime_forever'].sum().reset_index()
+    
+    # Encontrar al usuario con más horas jugadas para el género dado
+    user_max_hours = user_hours_sum.loc[user_hours_sum['playtime_forever'].idxmax(), 'user_id']
+    
+    
+    # Calcular la acumulación de horas jugadas por año de lanzamiento
+    hours_per_year = filtered_df.groupby(filtered_df['release_date'])['playtime_forever'].sum().reset_index()
+    hours_per_year = hours_per_year.rename(columns={'release_date': 'Año', 'playtime_forever': 'Horas'})
+    hours_per_year = hours_per_year.to_dict(orient='records')
+    
+    return {
+        "Usuario con más horas jugadas para el Género": user_max_hours,
+        "Horas jugadas por año": hours_per_year
+    }
+
