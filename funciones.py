@@ -149,3 +149,32 @@ def best_developer_year(año: int):
                         {"Puesto 3": top3_developers.iloc[2, 0]}]
     
     return formatted_result
+
+ # def developer_reviews_analysis( desarrolladora : str ): Según el desarrollador, 
+ # se devuelve un diccionario con el nombre del desarrollador como llave y una lista 
+ # con la cantidad total de registros de reseñas de usuarios que se encuentren categorizados 
+ # con un análisis de sentimiento como valor positivo o negativo.   
+
+ #Funcion Developer_Reviews_Analysis
+def developer_reviews_analysis(desarrolladora: str):
+    # Cargar el Dataset
+    df = pd.read_parquet('./Datasets/def_developer_reviews_analysis.parquet')
+    # Filtrar las filas que contienen el desarrollador especificado
+    filtered_df = df[df['publisher'].str.contains(desarrolladora, case=False, na=False)]
+    
+    if filtered_df.empty:
+        return {"error": "No se encontraron registros para el desarrollador especificado"}
+    
+    # Contar las reseñas positivas y negativas
+    positive_reviews = filtered_df[filtered_df['review'] == 2].shape[0]
+    negative_reviews = filtered_df[filtered_df['review'] == 0].shape[0]
+    
+    # Crear el diccionario de resultados
+    result = {
+        desarrolladora: {
+            "reseñas_positivas": positive_reviews,
+            "reseñas_negativas": negative_reviews
+        }
+    }
+    
+    return result
