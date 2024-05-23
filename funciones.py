@@ -122,3 +122,30 @@ def UserForGenre(genero: str):
         "Horas jugadas por año": hours_per_year
     }
 
+
+# def best_developer_year( año : int ): Devuelve el top 3 de desarrolladores con juegos MÁS recomendados 
+# por usuarios para el año dado. (reviews.recommend = True y comentarios positivos)
+
+#Funcion Best_developer_year
+def best_developer_year(año: int):
+    # Cargar el dataset
+    df = pd.read_parquet('./Datasets/def_best_developer_year.parquet')
+    
+    # Filtrar el DataFrame por el año dado
+    df_filtered = df[df['posted'] == año]
+    
+    # Agrupar y contar las ocurrencias por desarrollador
+    grouped = df_filtered.groupby('publisher').size().reset_index(name='count')
+    
+    # Ordenar los resultados por cantidad de apariciones
+    grouped_sorted = grouped.sort_values(by='count', ascending=False)
+    
+    # Obtener el top 3 de desarrolladores para el año dado
+    top3_developers = grouped_sorted.head(3)
+    
+    # Formatear el resultado en el formato solicitado
+    formatted_result = [{"Puesto 1": top3_developers.iloc[0, 0]}, 
+                        {"Puesto 2": top3_developers.iloc[1, 0]},
+                        {"Puesto 3": top3_developers.iloc[2, 0]}]
+    
+    return formatted_result
