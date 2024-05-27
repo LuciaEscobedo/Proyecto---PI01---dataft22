@@ -103,6 +103,10 @@ def UserForGenre(genero: str):
     # Cargar el Dataset
     df_combined = pd.read_parquet('./Datasets/def_userforgenre.parquet')
 
+    # Convertir el género a minúsculas para una comparación insensible a mayúsculas/minúsculas
+    genero = genero.lower()
+    df_combined['genres'] = df_combined['genres'].str.lower()
+
     # Filtrar las filas que contienen el género especificado en alguna parte del texto
     filtered_df = df_combined[df_combined['genres'].str.contains(genero, case=False, na=False)]
     
@@ -114,7 +118,6 @@ def UserForGenre(genero: str):
     
     # Encontrar al usuario con más horas jugadas para el género dado
     user_max_hours = user_hours_sum.loc[user_hours_sum['playtime_forever'].idxmax(), 'user_id']
-    
     
     # Calcular la acumulación de horas jugadas por año de lanzamiento
     hours_per_year = filtered_df.groupby(filtered_df['release_date'])['playtime_forever'].sum().reset_index()
@@ -163,6 +166,11 @@ def best_developer_year(año: int):
 def developer_reviews_analysis(desarrolladora: str):
     # Cargar el Dataset
     df = pd.read_parquet('./Datasets/def_developer_reviews_analysis.parquet')
+    
+    # Convertir la desarrolladora a minúsculas para una comparación insensible a mayúsculas/minúsculas
+    desarrolladora = desarrolladora.lower()
+    df['publisher'] = df['publisher'].str.lower()
+
     # Filtrar las filas que contienen el desarrollador especificado
     filtered_df = df[df['publisher'].str.contains(desarrolladora, case=False, na=False)]
     
