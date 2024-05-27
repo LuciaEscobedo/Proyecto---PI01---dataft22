@@ -5,11 +5,13 @@ from sklearn.preprocessing import OneHotEncoder
 # def developer( desarrollador : str ): 
 # Cantidad de items y porcentaje de contenido Free por año según empresa desarrolladora.
 
-# Funcion Developer
 def developer(desarrollador: str):
     # Cargar el Dataset
     df_desarrolladores = pd.read_parquet('./Datasets/def_developer.parquet')
 
+    # Convertir a minúsculas para una comparación insensible a mayúsculas/minúsculas
+    desarrollador = desarrollador.lower()
+    df_desarrolladores['publisher'] = df_desarrolladores['publisher'].str.lower()
 
     # Filtrar los datos para el desarrollador dado
     desarrollador_data = df_desarrolladores[df_desarrolladores['publisher'] == desarrollador]
@@ -21,7 +23,7 @@ def developer(desarrollador: str):
         # Inicializar el diccionario para contener la información
         items_x_anio = {}
 
-        # Recorrer las filas de datos del desarrollador 
+        # Recorrer las filas de datos del desarrollador
         for _, row in desarrollador_data.iterrows():
             year = row['release_date']  # Usar directamente el año de la columna release_date
             items_x_anio.setdefault(year, {"Cantidad_items": 0, "Cantidad_contenido_free": 0})
