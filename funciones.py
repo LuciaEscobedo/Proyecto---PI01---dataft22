@@ -236,7 +236,7 @@ def recomendacion_usuario(user_id: str):
             return {"error": "No hay suficientes juegos para recomendar"}
 
         # Obtener los nombres de los juegos recomendados y limitar a 5
-        recommended_games = df[df['item_id'].isin(final_recommendations)]['app_name'].unique()[:5]
+        recommended_games = df[df['item_id'].isin(final_recommendations)]['app_name'].unique()[:4]
         print(f"Juegos recomendados finales: {recommended_games}")
         
         return list(recommended_games)
