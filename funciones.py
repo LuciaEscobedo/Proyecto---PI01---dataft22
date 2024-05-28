@@ -195,12 +195,6 @@ def developer_reviews_analysis(desarrolladora: str):
 # def recomendacion_usuario( id de usuario ): Ingresando el id de un usuario, 
 # deberíamos recibir una lista con 5 juegos recomendados para dicho usuario.
 
-import pandas as pd
-from sklearn.metrics.pairwise import cosine_similarity
-
-import pandas as pd
-from sklearn.metrics.pairwise import cosine_similarity
-
 def recomendacion_usuario(user_id: str):
     try:
         # Intentar cargar el Dataset
