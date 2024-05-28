@@ -225,7 +225,7 @@ def recomendacion_usuario(user_id: str):
         final_recommendations = [item for item in recommended_items if item not in user_reviewed_items]
         
         # Asegurarnos de tener al menos 5 recomendaciones
-        if len(final_recommendations) < 4:
+        if len(final_recommendations) < 5:
             return {"error": "No hay suficientes juegos para recomendar"}
 
         # Obtener los nombres de los juegos recomendados y limitar a 5
@@ -234,3 +234,4 @@ def recomendacion_usuario(user_id: str):
         return list(recommended_games)
     except Exception as e:
         return {"error": f"Error durante el procesamiento de datos: {e}"}
+
