@@ -197,37 +197,41 @@ def developer_reviews_analysis(desarrolladora: str):
 
 def recomendacion_usuario(user_id: str):
     
-    # Cargar el Dataset
-    df = pd.read_parquet('./Datasets/def_recomendacion_usuario.parquet')
+    try:
+        # Intentar cargar solo las columnas necesarias
+        df = pd.read_parquet('./Datasets/def_recomendacion_usuario.parquet', columns=['user_id', 'item_id', 'review', 'app_name'])
+    except Exception as e:
+        return {"error": f"Error al cargar el dataset: {e}"}
 
-    # Crear una matriz de usuario-item
-    user_item_matrix = df.pivot_table(index='user_id', columns='item_id', values='review', fill_value=0)
-
-    # Calcular la similitud del coseno entre los usuarios
-    user_similarity = cosine_similarity(user_item_matrix)
-
-    # Crear un DataFrame a partir de la matriz de similitud
-    user_similarity_df = pd.DataFrame(user_similarity, index=user_item_matrix.index, columns=user_item_matrix.index)
+    try:
+        # Crear una matriz de usuario-item de manera más eficiente
+        user_item_matrix = df.pivot_table(index='user_id', columns='item_id', values='review', fill_value=0)
         
-    if user_id not in user_similarity_df.index:
-        return {"error": "El ID de usuario especificado no existe en los datos"}
-    
-    # Obtener los usuarios más similares (aumentamos el número de usuarios similares considerados)
-    similar_users = user_similarity_df[user_id].sort_values(ascending=False).index[1:11]
-    
-    # Obtener los juegos que estos usuarios han calificado positivamente (review = 2)
-    recommended_items = df[df['user_id'].isin(similar_users) & (df['review'] == 2)]['item_id'].unique()
-    
-    # Filtrar los juegos que el usuario ya ha revisado
-    user_reviewed_items = df[df['user_id'] == user_id]['item_id'].unique()
-    final_recommendations = [item for item in recommended_items if item not in user_reviewed_items]
-    
-    # Asegurarnos de tener al menos 5 recomendaciones
-    if len(final_recommendations) < 5:
-        return {"error": "No hay suficientes juegos para recomendar"}
+        if user_id not in user_item_matrix.index:
+            return {"error": "El ID de usuario especificado no existe en los datos"}
 
-    # Obtener los nombres de los juegos recomendados y limitar a 5
-    recommended_games = df[df['item_id'].isin(final_recommendations)]['app_name'].unique()[:5]
-    
-    return list(recommended_games)
+        # Calcular la similitud del coseno solo para el usuario especificado
+        user_vector = user_item_matrix.loc[user_id].values.reshape(1, -1)
+        user_similarity = cosine_similarity(user_vector, user_item_matrix.values).flatten()
 
+        # Crear una serie a partir de la similitud y ordenar los usuarios similares
+        user_similarity_series = pd.Series(user_similarity, index=user_item_matrix.index)
+        similar_users = user_similarity_series.sort_values(ascending=False).index[1:11]  # Ignorar el propio usuario
+
+        # Filtrar juegos revisados positivamente por usuarios similares
+        recommended_items = df[df['user_id'].isin(similar_users) & (df['review'] == 2)]['item_id'].unique()
+        
+        # Filtrar juegos ya revisados por el usuario
+        user_reviewed_items = df[df['user_id'] == user_id]['item_id'].unique()
+        final_recommendations = [item for item in recommended_items if item not in user_reviewed_items]
+
+        # Asegurarnos de tener al menos 5 recomendaciones
+        if len(final_recommendations) < 5:
+            return {"error": "No hay suficientes juegos para recomendar"}
+
+        # Obtener los nombres de los juegos recomendados y limitar a 5
+        recommended_games = df[df['item_id'].isin(final_recommendations)]['app_name'].unique()[:5]
+
+        return list(recommended_games)
+    except Exception as e:
+        return {"error": f"Error durante el procesamiento de datos: {e}"}
