@@ -197,7 +197,6 @@ def developer_reviews_analysis(desarrolladora: str):
 
 def recomendacion_usuario(user_id: str):
     
-    
     try:
         # Intentar cargar el Dataset
         df = pd.read_parquet('./Datasets/def_recomendacion_usuario.parquet')
