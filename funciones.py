@@ -204,31 +204,29 @@ def recomendacion_usuario(user_id: str):
         df = pd.read_parquet('./Datasets/def_recomendacion_usuario.parquet')
     except Exception as e:
         return {"error": f"Error al cargar el dataset: {e}"}
-
+    
     try:
         # Crear una matriz de usuario-item
         user_item_matrix = df.pivot_table(index='user_id', columns='item_id', values='review', fill_value=0)
 
         if user_id not in user_item_matrix.index:
             return {"error": "El ID de usuario especificado no existe en los datos"}
-
-        # Calcular la similitud del coseno entre los usuarios
-        user_similarity = cosine_similarity(user_item_matrix)
-
-        # Obtener la fila de similitud para el usuario especificado
-        user_similarities = user_similarity[user_item_matrix.index.get_loc(user_id)]
-
-        # Ordenar los índices de usuarios por similitud
-        similar_users_indices = user_similarities.argsort()[::-1][1:11]  # Ignorar el propio usuario
-        similar_users = user_item_matrix.index[similar_users_indices]
-
+        
+        # Calcular la similitud del coseno entre los usuarios utilizando una fila específica
+        user_vector = user_item_matrix.loc[user_id].values.reshape(1, -1)
+        user_similarity = cosine_similarity(user_vector, user_item_matrix).flatten()
+        
+        # Crear una serie a partir de la similitud y ordenar los usuarios similares
+        user_similarity_series = pd.Series(user_similarity, index=user_item_matrix.index)
+        similar_users = user_similarity_series.sort_values(ascending=False).index[1:11]  # Ignorar el propio usuario
+        
         # Obtener los juegos que estos usuarios han calificado positivamente (review = 2)
         recommended_items = df[df['user_id'].isin(similar_users) & (df['review'] == 2)]['item_id'].unique()
-
+        
         # Filtrar los juegos que el usuario ya ha revisado
         user_reviewed_items = df[df['user_id'] == user_id]['item_id'].unique()
         final_recommendations = [item for item in recommended_items if item not in user_reviewed_items]
-
+        
         # Asegurarnos de tener al menos 5 recomendaciones
         if len(final_recommendations) < 5:
             return {"error": "No hay suficientes juegos para recomendar"}
