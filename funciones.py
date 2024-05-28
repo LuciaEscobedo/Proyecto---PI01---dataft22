@@ -225,7 +225,7 @@ def recomendacion_usuario(user_id: str):
         final_recommendations = [item for item in recommended_items if item not in user_reviewed_items]
         
         # Asegurarnos de tener al menos 5 recomendaciones
-        if len(final_recommendations) < 5:
+        if len(final_recommendations) < 4:
             return {"error": "No hay suficientes juegos para recomendar"}
 
         # Obtener los nombres de los juegos recomendados y limitar a 5
