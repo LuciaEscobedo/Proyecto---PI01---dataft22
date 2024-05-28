@@ -195,49 +195,46 @@ def developer_reviews_analysis(desarrolladora: str):
 # def recomendacion_usuario( id de usuario ): Ingresando el id de un usuario, 
 # deberíamos recibir una lista con 5 juegos recomendados para dicho usuario.
 
-def recomendacion_usuario(user_id: str):
+def recomendacion_usuario(user_id, top_n=5):
+    # Cargar el Dataset
+    df = pd.read_parquet('./Datasets/def_recomendacion_usuario.parquet')
+
+    # Crear la matriz de usuario-item dispersa
+    user_item_matrix = df.pivot_table(index='user_id', columns='item_id', values='review', fill_value=0)
+    sparse_user_item_matrix = csr_matrix(user_item_matrix.values)
+
+    # Calcular la similitud del coseno entre usuarios
+    user_similarity = cosine_similarity(sparse_user_item_matrix, dense_output=False)
+    user_similarity_df = pd.DataFrame(user_similarity.toarray(), index=user_item_matrix.index, columns=user_item_matrix.index)
+
+    # Encontrar los usuarios más similares al usuario dado
+    similar_users = user_similarity_df[user_id].sort_values(ascending=False).index[1:]
     
-    try:
-        # Intentar cargar el Dataset
-        df = pd.read_parquet('./Datasets/def_recomendacion_usuario.parquet')
-        print(f"Datos cargados correctamente. Total de registros: {len(df)}")
-    except Exception as e:
-        return {"error": f"Error al cargar el dataset: {e}"}
+    # Juegos ya revisados por el usuario dado
+    user_games = set(df[df['user_id'] == user_id]['item_id'])
     
-    try:
-        # Crear una matriz de usuario-item
-        user_item_matrix = df.pivot_table(index='user_id', columns='item_id', values='review', fill_value=0)
-        print(f"Matriz usuario-item creada. Dimensiones: {user_item_matrix.shape}")
-
-        if user_id not in user_item_matrix.index:
-            return {"error": "El ID de usuario especificado no existe en los datos"}
+    # Crear un diccionario para almacenar la suma ponderada de las calificaciones
+    recommendations = {}
+    
+    for similar_user in similar_users:
+        # Obtener los juegos y sus calificaciones del usuario similar
+        similar_user_games = df[df['user_id'] == similar_user]
         
-        # Calcular la similitud del coseno entre los usuarios utilizando una fila específica
-        user_vector = user_item_matrix.loc[user_id].values.reshape(1, -1)
-        user_similarity = cosine_similarity(user_vector, user_item_matrix).flatten()
+        for _, row in similar_user_games.iterrows():
+            if row['item_id'] not in user_games:  # No recomendar juegos ya revisados
+                if row['item_id'] not in recommendations:
+                    recommendations[row['item_id']] = 0
+                # Añadir la calificación ponderada por la similitud del usuario
+                recommendations[row['item_id']] += row['review'] * user_similarity_df.at[user_id, similar_user]
         
-        # Crear una serie a partir de la similitud y ordenar los usuarios similares
-        user_similarity_series = pd.Series(user_similarity, index=user_item_matrix.index)
-        similar_users = user_similarity_series.sort_values(ascending=False).index[1:11]  # Ignorar el propio usuario
-        print(f"Usuarios similares encontrados: {len(similar_users)}")
-
-        # Obtener los juegos que estos usuarios han calificado positivamente (review = 2)
-        recommended_items = df[df['user_id'].isin(similar_users) & (df['review'] == 2)]['item_id'].unique()
-        print(f"Juegos recomendados encontrados: {len(recommended_items)}")
-        
-        # Filtrar los juegos que el usuario ya ha revisado
-        user_reviewed_items = df[df['user_id'] == user_id]['item_id'].unique()
-        final_recommendations = [item for item in recommended_items if item not in user_reviewed_items]
-        print(f"Juegos finales recomendados después de filtrar: {len(final_recommendations)}")
-        
-        # Asegurarnos de tener al menos 5 recomendaciones
-        if len(final_recommendations) < 5:
-            return {"error": "No hay suficientes juegos para recomendar"}
-
-        # Obtener los nombres de los juegos recomendados y limitar a 5
-        recommended_games = df[df['item_id'].isin(final_recommendations)]['app_name'].unique()[:4]
-        print(f"Juegos recomendados finales: {recommended_games}")
-        
-        return list(recommended_games)
-    except Exception as e:
-        return {"error": f"Error durante el procesamiento de datos: {e}"}
+        # Parar si tenemos suficientes recomendaciones
+        if len(recommendations) >= top_n:
+            break
+    
+    # Ordenar las recomendaciones por la calificación ponderada
+    recommendations = sorted(recommendations.items(), key=lambda x: x[1], reverse=True)
+    
+    # Obtener los nombres de las aplicaciones correspondientes a los item_id
+    recommended_games = [df[df['item_id'] == item_id]['app_name'].values[0] for item_id, _ in recommendations[:top_n]]
+    
+    return recommended_games
