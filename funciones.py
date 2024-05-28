@@ -195,6 +195,8 @@ def developer_reviews_analysis(desarrolladora: str):
 # def recomendacion_usuario( id de usuario ): Ingresando el id de un usuario, 
 # deberíamos recibir una lista con 5 juegos recomendados para dicho usuario.
 
+from scipy.sparse import csr_matrix
+
 def recomendacion_usuario(user_id, top_n=5):
     # Cargar el Dataset
     df = pd.read_parquet('./Datasets/def_recomendacion_usuario.parquet')
